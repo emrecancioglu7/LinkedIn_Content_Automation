@@ -1,0 +1,137 @@
+name: linkedin-content-automation
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-linkedin_content}
+      POSTGRES_USER: ${POSTGRES_USER:-n8n}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      TZ: Europe/Istanbul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - backend
+
+  n8n:
+    image: n8nio/n8n:2.3.4
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-linkedin_content}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY is required}
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      N8N_SSL_KEY: /data/tls/localhost-key.pem
+      N8N_SSL_CERT: /data/tls/localhost-cert.pem
+      N8N_EDITOR_BASE_URL: https://emrecancioglu.com
+      WEBHOOK_URL: https://localhost:${N8N_PORT:-5678}/
+      N8N_SECURE_COOKIE: "true"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_RESTRICT_FILE_ACCESS_TO: /data/content
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: 336
+      EXECUTIONS_DATA_PRUNE_MAX_COUNT: 1000
+      GENERIC_TIMEZONE: Europe/Istanbul
+      TZ: Europe/Istanbul
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./content-data:/data/content
+      - ./tls:/data/tls:ro
+      - ./workflows:/opt/linkedin-workflows:ro
+      - ./n8n-overrides/LinkedInOAuth2Api.credentials.js:/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist/credentials/LinkedInOAuth2Api.credentials.js:ro
+      - ./n8n-overrides/GenericFunctions.js:/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist/nodes/LinkedIn/GenericFunctions.js:ro
+    networks:
+      - backend
+
+  content-preview:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./content-data:/usr/share/nginx/html:ro
+    networks:
+      - backend
+
+  image-renderer:
+    build:
+      context: ./image-renderer
+    restart: unless-stopped
+    environment:
+      CONTENT_ROOT: /data/content/generated
+      LOGO_PATH: /data/brand/linkedin-app-logo.png
+      TZ: Europe/Istanbul
+    volumes:
+      - ./content-data:/data/content
+      - ./brand:/data/brand:ro
+    networks:
+      - backend
+
+  radar-collector:
+    build:
+      context: ./radar-collector
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Istanbul
+    networks:
+      - backend
+
+  telegram-review-bot:
+    build:
+      context: ./telegram-bot
+    restart: unless-stopped
+    profiles: ["telegram"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-linkedin_content}
+      POSTGRES_USER: ${POSTGRES_USER:-n8n}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      TELEGRAM_PAIRING_CODE_FILE: /run/secrets/telegram_pairing_code
+      TZ: Europe/Istanbul
+    secrets:
+      - telegram_bot_token
+      - telegram_pairing_code
+    volumes:
+      - ./content-data:/data/content:ro
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  n8n_data:
+  postgres_data:
+
+secrets:
+  telegram_bot_token:
+    file: ./.secrets/telegram_bot_token
+  telegram_pairing_code:
+    file: ./.secrets/telegram_pairing_code

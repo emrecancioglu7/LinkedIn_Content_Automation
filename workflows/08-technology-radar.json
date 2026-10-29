@@ -1,0 +1,67 @@
+{
+  "id": "NHEhA7K2Pv6v7lAs",
+  "name": "LinkedIn 08 - Gunluk Teknoloji Radari",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "fd80a25d-258d-4d3c-ae02-af378f30aaa0",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, -280]
+    },
+    {
+      "parameters": {"rule":{"interval":[{"field":"days","daysInterval":1,"triggerAtHour":7,"triggerAtMinute":30}]}},
+      "id": "fd80a25d-258d-4d3c-ae02-af378f30aaa1",
+      "name": "Daily 07:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, -120]
+    },
+    {
+      "parameters": {"method":"GET","url":"http://radar-collector:8082/collect","options":{"timeout":60000}},
+      "id": "fd80a25d-258d-4d3c-ae02-af378f30aaa2",
+      "name": "Collect Official Sources",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, -120]
+    },
+    {
+      "parameters": {"operation":"executeQuery","query":"INSERT INTO radar_items (source, source_id, title, summary, url, published_at, category, relevance_score, urgency_score) SELECT item->>'source', item->>'source_id', item->>'title', item->>'summary', item->>'url', NULLIF(item->>'published_at','')::timestamptz, item->>'category', COALESCE((item->>'relevance_score')::integer,0), COALESCE((item->>'urgency_score')::integer,0) FROM jsonb_array_elements($1::jsonb) item ON CONFLICT (source, source_id) DO UPDATE SET title=EXCLUDED.title, summary=EXCLUDED.summary, url=EXCLUDED.url, published_at=EXCLUDED.published_at, category=EXCLUDED.category, relevance_score=EXCLUDED.relevance_score, urgency_score=EXCLUDED.urgency_score, updated_at=now() RETURNING id;","options":{"queryReplacement":"={{ [ JSON.stringify($json.items || []) ] }}"}},
+      "id": "fd80a25d-258d-4d3c-ae02-af378f30aaa3",
+      "name": "Store Radar Items",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [520, -120],
+      "credentials": {"postgres":{"id":"RCUmTRfZRsrZRn82","name":"Postgres account"}}
+    },
+    {
+      "parameters": {"rule":{"interval":[{"field":"weeks","weeksInterval":1,"triggerAtDay":[1],"triggerAtHour":8,"triggerAtMinute":0}]}},
+      "id": "fd80a25d-258d-4d3c-ae02-af378f30aaa4",
+      "name": "Monday 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 120]
+    },
+    {
+      "parameters": {"operation":"executeQuery","query":"WITH mode AS (SELECT (extract(week from now())::integer % 2) AS external_week), external_pick AS (SELECT r.* FROM radar_items r, mode m WHERE m.external_week=0 AND r.status='new' AND r.relevance_score >=55 AND r.published_at >= now()-interval '30 days' ORDER BY (SELECT count(*) FROM radar_items used WHERE used.source=r.source AND used.status IN ('selected','used')) ASC, r.relevance_score+r.urgency_score DESC, r.published_at DESC LIMIT 1 FOR UPDATE SKIP LOCKED), evergreen_pick AS (SELECT e.* FROM evergreen_topics e, mode m WHERE e.active AND (m.external_week=1 OR NOT EXISTS (SELECT 1 FROM external_pick)) ORDER BY e.last_used_at NULLS FIRST, e.id LIMIT 1 FOR UPDATE SKIP LOCKED), inserted_external AS (INSERT INTO evidence_items (kind,title,situation,action_text,result_text,source_ref,proof_level,confidentiality,approved_claims,tags) SELECT 'publication', external_pick.title, external_pick.summary, 'Haberi özetlemek yerine Emre Cancioglu uzmanlık perspektifinden teknik etkisini, mimari sonucunu ve uygulayıcılar için çıkarımları analiz et. Emre bu çalışmayı yapmış gibi anlatma. Paylaşımda resmi kaynak bağlantısını açıkça belirt.', 'Resmi kaynakta yayımlanan güncel gelişme.', external_pick.url, 'verified', 'public', jsonb_build_array(external_pick.title, external_pick.summary, external_pick.url), ARRAY[external_pick.category,'technology_radar'] FROM external_pick ON CONFLICT (title,source_ref) DO NOTHING RETURNING id), inserted_evergreen AS (INSERT INTO evidence_items (kind,title,situation,action_text,result_text,source_ref,proof_level,confidentiality,approved_claims,tags) SELECT 'opinion', evergreen_pick.title, 'Uzmanlık alanına uygun kavramsal teknik içerik.', evergreen_pick.angle || ' Haber özeti yazma; öğretici, özgün bir teknik bakış açısı oluştur. Yapılmış proje veya test iddiası kullanma.', 'Kavramsal analiz; müşteri veya üretim ortamı sonucu içermez.', 'evergreen:'||evergreen_pick.id||':'||to_char(now(),'IYYY-IW'), 'idea', 'public', jsonb_build_array('Bu içerik kavramsal teknik analizdir.', evergreen_pick.angle), ARRAY[evergreen_pick.pillar,evergreen_pick.format] FROM evergreen_pick ON CONFLICT (title,source_ref) DO NOTHING RETURNING id), mark_radar AS (UPDATE radar_items SET status='selected' WHERE id IN (SELECT id FROM external_pick) AND EXISTS (SELECT 1 FROM inserted_external) RETURNING id), mark_evergreen AS (UPDATE evergreen_topics SET last_used_at=now() WHERE id IN (SELECT id FROM evergreen_pick) AND EXISTS (SELECT 1 FROM inserted_evergreen) RETURNING id) SELECT COALESCE((SELECT id FROM inserted_external LIMIT 1),(SELECT id FROM inserted_evergreen LIMIT 1)) AS evidence_id;","options":{}},
+      "id": "fd80a25d-258d-4d3c-ae02-af378f30aaa5",
+      "name": "Create Weekly Evidence",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [260, 120],
+      "credentials": {"postgres":{"id":"RCUmTRfZRsrZRn82","name":"Postgres account"}}
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {"main":[[{"node":"Collect Official Sources","type":"main","index":0}]]},
+    "Daily 07:30": {"main":[[{"node":"Collect Official Sources","type":"main","index":0}]]},
+    "Collect Official Sources": {"main":[[{"node":"Store Radar Items","type":"main","index":0}]]},
+    "Monday 08:00": {"main":[[{"node":"Create Weekly Evidence","type":"main","index":0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder":"v1","timezone":"Europe/Istanbul","saveManualExecutions":true},
+  "versionId": "4df80785-aa92-4dd9-a58c-e3eef067f108",
+  "meta": {"templateCredsSetupCompleted":true},
+  "tags": []
+}

@@ -1,0 +1,201 @@
+{
+  "id": "dtpizVnpxzNnS728",
+  "name": "LinkedIn 03 - Teknik Gorsel Uretimi",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a21d76e1-923e-455f-a374-1e7f20308cf8",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "db13a3fc-8a1b-4423-895f-68ca2813545d",
+      "name": "Every 2 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 160]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, pillar, hook, body, image_brief, image_title, image_points FROM content_posts WHERE approval_status = 'needs_review' AND image_path IS NULL ORDER BY created_at LIMIT 1;",
+        "options": {}
+      },
+      "id": "cf056ef0-c8e4-463a-8d62-5e1ed1c5b301",
+      "name": "Select Draft",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [260, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const post = $json;\nconst visualRules = `Create a premium editorial technology illustration for a Turkish LinkedIn expert post. Use a sophisticated dark navy, electric blue, white and turquoise palette with selective luminous accents. Build a strong central focal point, layered depth, elegant isometric or semi-3D technical forms, subtle cinematic lighting, soft shadows and crisp geometry. Make complex industrial technology immediately understandable and visually memorable, like a high-end technology magazine cover illustration. Use the full square canvas with balanced negative space. Avoid generic stock imagery, clutter, excessive tiny icons, photorealistic factory scenes, fake dashboard screenshots, customer logos, brand names, human faces and personal data. Do not render any words, letters, labels or pseudo-writing; exact Turkish text and branding will be placed in separate bands outside the illustration. Square 1200x1200 composition.`;\nreturn [{ json: { request_body: {\n  model: 'gpt-image-2.5-flare',\n  prompt: `${visualRules}\\n\\nPost theme: ${post.pillar}\\nHook: ${post.hook}\\nVisual brief: ${post.image_brief}`,\n  size: '1200x1200',\n  quality: 'high',\n  output_format: 'png',\n  background: 'opaque'\n} } }];"
+      },
+      "id": "d2e7b86d-1d97-461e-8a8a-204a72a09978",
+      "name": "Build Image Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestBody = { ...$json.request_body };\nrequestBody.prompt = `${requestBody.prompt}\\n\\nPREMIUM ART DIRECTION — this overrides earlier color wording. Match the visual identity of emrecancioglu.com exactly: obsidian black #0A0B0D background, graphite surfaces #131519 and #1A1D22, restrained emerald accent #34D399, deep emerald #10B981, warm off-white #ECECEA and muted gray #9A9A97. Do not use electric blue, cyan, purple, rainbow gradients or excessive neon. Create a luxury enterprise-technology editorial illustration with cinematic low-key lighting, brushed graphite metal, smoked glass, precise micro-details, subtle volumetric depth and controlled emerald reflections. Avoid plastic toy-like 3D icons, generic stock isometric scenes, glossy cartoon objects, oversized shields and decorative glow overload. Show exactly three or four clearly separated architecture components connected by an obvious directional flow. Use recognizable server racks, database cylinders, network zones, gateways, industrial controllers or field devices as appropriate. Reserve clean negative space along the left and right edges for deterministic Turkish callout labels that will be added later. Keep every component visually distinct and do not place important objects against the side edges. The result should feel like a premium technology annual report cover, not a template.`;\nreturn [{ json: { request_body: requestBody } }];"
+      },
+      "id": "7cbd2ffd-a55d-4456-87fa-e21ffdc1e8ca",
+      "name": "Apply Diagram Composition",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://image-renderer:8081/render",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ post_id: $('Select Draft').first().json.id, title: $('Select Draft').first().json.image_title || $('Select Draft').first().json.hook, points: $('Select Draft').first().json.image_points || [], body: $('Select Draft').first().json.body, pillar: $('Select Draft').first().json.pillar }) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "c812cd51-f02c-4b56-9aea-416e59ad10be",
+      "name": "Apply Brand Layout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1430, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.request_body) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "79882ef2-dc65-47bb-b851-b187e1be7b51",
+      "name": "OpenAI Image Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 0],
+      "credentials": {
+        "openAiApi": {
+          "id": "OzOsPk2xMu5RlMeJ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nif (response.error) throw new Error(`OpenAI image error: ${JSON.stringify(response.error)}`);\nconst base64 = response.data?.[0]?.b64_json;\nif (!base64) throw new Error('Gorsel base64 verisi bulunamadi');\nconst post = $('Select Draft').first().json;\nconst fileName = `${post.id}.png`;\nconst imagePath = `/data/content/generated/${fileName}`;\nreturn [{\n  json: {\n    post_id: post.id,\n    image_path: imagePath,\n    image_model: 'gpt-image-2.5-flare',\n    image_usage: response.usage ?? null\n  },\n  binary: {\n    data: {\n      data: base64,\n      mimeType: 'image/png',\n      fileName,\n      fileExtension: 'png'\n    }\n  }\n}];"
+      },
+      "id": "4de9635c-47ab-4dff-9c5d-c115cdfd21d5",
+      "name": "Convert Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 0]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.image_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "9ba9de6f-99c3-4611-8d8e-a1c9b0caa45a",
+      "name": "Write Image to Disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [1300, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_posts SET image_path = $2, image_model = $3, token_usage = COALESCE(token_usage, '{}'::jsonb) || jsonb_build_object('image', NULLIF($4, '')::jsonb) WHERE id = $1::uuid RETURNING id AS post_id, hook, body, cta, hashtags, image_path, approval_status;",
+        "options": {
+          "queryReplacement": "={{ [ $('Convert Image').first().json.post_id, $('Convert Image').first().json.image_path, $('Convert Image').first().json.image_model, JSON.stringify($('Convert Image').first().json.image_usage ?? {}) ] }}"
+        }
+      },
+      "id": "a3d07741-e298-482a-8190-11f68a6b86d4",
+      "name": "Save Image Metadata",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1690, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Select Draft", "type": "main", "index": 0 }]]
+    },
+    "Every 2 Minutes": {
+      "main": [[{ "node": "Select Draft", "type": "main", "index": 0 }]]
+    },
+    "Select Draft": {
+      "main": [[{ "node": "Build Image Request", "type": "main", "index": 0 }]]
+    },
+    "Build Image Request": {
+      "main": [[{ "node": "Apply Diagram Composition", "type": "main", "index": 0 }]]
+    },
+    "Apply Diagram Composition": {
+      "main": [[{ "node": "OpenAI Image Generation", "type": "main", "index": 0 }]]
+    },
+    "OpenAI Image Generation": {
+      "main": [[{ "node": "Convert Image", "type": "main", "index": 0 }]]
+    },
+    "Convert Image": {
+      "main": [[{ "node": "Write Image to Disk", "type": "main", "index": 0 }]]
+    },
+    "Write Image to Disk": {
+      "main": [[{ "node": "Apply Brand Layout", "type": "main", "index": 0 }]]
+    },
+    "Apply Brand Layout": {
+      "main": [[{ "node": "Save Image Metadata", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul",
+    "saveManualExecutions": true
+  },
+  "versionId": "388626e8-337e-459d-b0b7-1ea4e04d3527",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

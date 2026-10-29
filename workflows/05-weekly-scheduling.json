@@ -1,0 +1,71 @@
+{
+  "id": "K8oY2mTq7cV4nP1L",
+  "name": "LinkedIn 05 - Haftalik Yayin Planlama",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1ea86088-30dc-414a-8778-78ebc429f10a",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, -100]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "86aa021c-f3a8-4836-a22c-e28ef2105398",
+      "name": "Monday 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 100]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH slot AS (SELECT CASE WHEN now() < ((date_trunc('week', now() AT TIME ZONE 'Europe/Istanbul') + interval '1 day 17 hours 45 minutes') AT TIME ZONE 'Europe/Istanbul') THEN ((date_trunc('week', now() AT TIME ZONE 'Europe/Istanbul') + interval '1 day 17 hours 45 minutes') AT TIME ZONE 'Europe/Istanbul') ELSE ((date_trunc('week', now() AT TIME ZONE 'Europe/Istanbul') + interval '8 days 17 hours 45 minutes') AT TIME ZONE 'Europe/Istanbul') END AS scheduled_at), candidate AS (SELECT id FROM content_posts WHERE approval_status = 'approved' AND scheduled_at IS NULL AND image_path IS NOT NULL ORDER BY approved_at NULLS LAST, created_at LIMIT 1 FOR UPDATE SKIP LOCKED) UPDATE content_posts AS post SET scheduled_at = slot.scheduled_at FROM slot, candidate WHERE post.id = candidate.id RETURNING post.id AS post_id, post.hook, post.approval_status, post.scheduled_at, post.image_path;",
+        "options": {}
+      },
+      "id": "fd535cbc-a2ce-475e-a078-d0e3be298774",
+      "name": "Schedule Next Approved Post",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [280, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Schedule Next Approved Post", "type": "main", "index": 0 }]]
+    },
+    "Monday 09:00": {
+      "main": [[{ "node": "Schedule Next Approved Post", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul"
+  },
+  "versionId": "b2c1c50a-82cc-488e-844d-ddafbd5d4e01",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,138 @@
+{
+  "id": "GcZjukk6DyAiEICE",
+  "name": "LinkedIn 04 - Yerel Onay Formu",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "linkedin-local-review",
+        "formTitle": "LinkedIn Taslak İncelemesi",
+        "formDescription": "İncelemek istediğiniz gönderinin Post ID değerini girin. Karar alanları bir sonraki sayfada açılacaktır.",
+        "formFields": { "values": [
+          { "fieldLabel": "Post ID", "fieldName": "post_id", "fieldType": "text", "requiredField": true }
+        ]},
+        "responseMode": "lastNode",
+        "options": { "buttonLabel": "Gönderiyi Getir" }
+      },
+      "id": "271f5505-0882-42ca-a705-9202bc90deef",
+      "name": "Review Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [0, 0],
+      "webhookId": "b1081d64-c089-4e5c-bf8c-b3b0badc7b94"
+    },
+    {
+      "parameters": { "jsCode": "const id = String($json.post_id ?? '').trim();\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) throw new Error('Geçersiz Post ID');\nreturn [{ json: { post_id: id } }];" },
+      "id": "8f77b8a4-bfc5-4e35-9b82-9ca4816af68e",
+      "name": "Validate Post ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT requested.post_id, p.id, p.pillar, p.hook, p.body, p.cta, p.hashtags, p.image_path, p.approval_status FROM (SELECT $1::uuid AS post_id) requested LEFT JOIN content_posts p ON p.id = requested.post_id;",
+        "options": { "queryReplacement": "={{ [ $json.post_id ] }}" }
+      },
+      "id": "c878d872-e75f-4bc9-a049-56d260d1e56a",
+      "name": "Load Post",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [480, 0],
+      "credentials": { "postgres": { "id": "RCUmTRfZRsrZRn82", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "if (!$json.id) throw new Error('Bu Post ID ile eşleşen gönderi bulunamadı');\nconst esc = (value) => String(value ?? '').replace(/[&<>\\\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\\\"': '&quot;', \"'\": '&#39;' }[char]));\nconst hashtags = Array.isArray($json.hashtags) ? $json.hashtags.join(' ') : String($json.hashtags ?? '');\nconst imageUrl = `http://127.0.0.1:8080/generated/${encodeURIComponent($json.id)}.png`;\nconst previewHtml = `<article style=\"font-family:Arial,sans-serif;color:#13213c\"><h2 style=\"margin-bottom:8px\">${esc($json.hook)}</h2><div style=\"white-space:pre-wrap;line-height:1.55;margin-bottom:16px\">${esc($json.body)}</div><p style=\"font-weight:600\">${esc($json.cta)}</p><p style=\"color:#1769aa\">${esc(hashtags)}</p><img src=\"${imageUrl}\" alt=\"Gönderi görseli\" style=\"display:block;width:100%;max-width:720px;height:auto;border-radius:12px;margin:20px auto;border:1px solid #dbe4f0\"><p style=\"font-size:12px;color:#667085\">Post ID: ${esc($json.id)} · Durum: ${esc($json.approval_status)}</p></article>`;\nreturn [{ json: { ...$json, preview_html: previewHtml } }];"
+      },
+      "id": "38dc2b30-7861-47cf-af12-330b199a02d5",
+      "name": "Build Preview",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "operation": "page",
+        "formFields": { "values": [
+          { "fieldType": "html", "elementName": "post_preview", "html": "={{ $json.preview_html }}" },
+          { "fieldType": "hiddenField", "fieldName": "post_id", "fieldValue": "={{ $json.id }}" },
+          {
+            "fieldLabel": "Karar", "fieldName": "decision", "fieldType": "dropdown",
+            "fieldOptions": { "values": [
+              { "option": "Onayla" }, { "option": "Revizyon iste" }, { "option": "Reddet" }
+            ]},
+            "requiredField": true
+          },
+          { "fieldLabel": "İnceleme Notu", "fieldName": "reviewer_notes", "fieldType": "textarea" },
+          {
+            "fieldLabel": "Metni ve görseli kontrol ettim", "fieldName": "confirmed", "fieldType": "checkbox",
+            "fieldOptions": { "values": [{ "option": "EVET" }] }, "requiredField": true
+          }
+        ]},
+        "options": {
+          "formTitle": "Gönderi Önizleme ve Onay",
+          "formDescription": "İçeriği inceleyin. Revizyon istiyorsanız not alanına değiştirilmesini istediğiniz noktaları yazın.",
+          "buttonLabel": "Kararı Kaydet"
+        }
+      },
+      "id": "6bb5800a-64d8-437d-9305-caa3f42e5db0",
+      "name": "Review Preview",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [960, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const id = String($json.post_id ?? '').trim();\nconst decisionMap = { 'Onayla': 'approved', 'Revizyon iste': 'needs_review', 'Reddet': 'rejected' };\nconst decision = decisionMap[String($json.decision ?? '').trim()];\nconst confirmed = Array.isArray($json.confirmed) ? $json.confirmed.includes('EVET') : String($json.confirmed).includes('EVET');\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) throw new Error('Geçersiz Post ID');\nif (!decision) throw new Error('Geçersiz karar');\nif (!confirmed) throw new Error('Kontrol onay kutusu işaretlenmelidir');\nreturn [{ json: { post_id: id, decision, reviewer_notes: String($json.reviewer_notes ?? '').trim() } }];"
+      },
+      "id": "4143dfc4-badf-48be-a497-a27da63529c2",
+      "name": "Validate Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_posts SET approval_status = $2, reviewer_notes = NULLIF($3, ''), approved_at = CASE WHEN $2 = 'approved' THEN now() ELSE NULL END WHERE id = $1::uuid AND approval_status IN ('needs_review', 'draft', 'approved') RETURNING id, hook, approval_status, reviewer_notes, approved_at;",
+        "options": { "queryReplacement": "={{ [ $json.post_id, $json.decision, $json.reviewer_notes ] }}" }
+      },
+      "id": "0b7b8f2c-cd31-4db4-9da8-a7f36be4c5c8",
+      "name": "Save Review",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1440, 0],
+      "credentials": { "postgres": { "id": "RCUmTRfZRsrZRn82", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "Karar Kaydedildi",
+        "completionMessage": "Gönderi kararı veritabanına kaydedildi. Otomatik LinkedIn yayını kapalı kalmaya devam ediyor.",
+        "options": {}
+      },
+      "id": "4e662e95-8c9b-4c50-a78a-fef55fe068f0",
+      "name": "Review Completed",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [1680, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Review Form": { "main": [[{ "node": "Validate Post ID", "type": "main", "index": 0 }]] },
+    "Validate Post ID": { "main": [[{ "node": "Load Post", "type": "main", "index": 0 }]] },
+    "Load Post": { "main": [[{ "node": "Build Preview", "type": "main", "index": 0 }]] },
+    "Build Preview": { "main": [[{ "node": "Review Preview", "type": "main", "index": 0 }]] },
+    "Review Preview": { "main": [[{ "node": "Validate Decision", "type": "main", "index": 0 }]] },
+    "Validate Decision": { "main": [[{ "node": "Save Review", "type": "main", "index": 0 }]] },
+    "Save Review": { "main": [[{ "node": "Review Completed", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "timezone": "Europe/Istanbul" },
+  "versionId": "ea076709-28ea-41c2-ae1c-52ee785f1b14",
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}

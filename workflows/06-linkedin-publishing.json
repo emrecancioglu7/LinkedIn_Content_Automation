@@ -1,0 +1,174 @@
+{
+  "name": "LinkedIn 06 - Onayli Gonderiyi Yayinla",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "59bf906d-60eb-4411-8687-e02ff8057829",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, -100]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "a06c2e8b-d02a-4f69-a49c-7fe491e0f1bb",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 100]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH candidate AS (SELECT id FROM content_posts WHERE approval_status = 'approved' AND scheduled_at IS NOT NULL AND scheduled_at <= now() AND image_path IS NOT NULL AND linkedin_post_urn IS NULL ORDER BY scheduled_at, created_at LIMIT 1 FOR UPDATE SKIP LOCKED) UPDATE content_posts AS post SET approval_status = 'publishing' FROM candidate WHERE post.id = candidate.id RETURNING post.id AS post_id, post.hook, post.body, post.cta, post.hashtags, post.image_path, post.scheduled_at;",
+        "options": {}
+      },
+      "id": "a60b0a11-7039-4394-b858-d2f32e08967a",
+      "name": "Claim Due Post",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [280, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/userinfo",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "options": {}
+      },
+      "id": "3f948c3a-4514-41bc-a954-b55a83b2a327",
+      "name": "Get LinkedIn Member",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [540, 0],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "lQvX3dKtnjPnNQB4",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const post = $('Claim Due Post').first().json;\nconst member = $json;\nif (!member.sub) throw new Error('LinkedIn uye kimligi alinamadi');\nif (!String(post.image_path ?? '').match(/^\\/data\\/content\\/generated\\/[0-9a-f-]+\\.png$/i)) throw new Error('Gecersiz gorsel yolu');\nconst hashtags = Array.isArray(post.hashtags) ? post.hashtags.join(' ') : String(post.hashtags ?? '');\nconst linkedinText = [post.hook, post.body, post.cta, hashtags].map((value) => String(value ?? '').trim()).filter(Boolean).join('\\n\\n');\nif (!linkedinText) throw new Error('LinkedIn metni bos olamaz');\nreturn [{ json: { post_id: post.post_id, author_id: member.sub, linkedin_text: linkedinText, image_path: post.image_path, image_title: post.hook } }];"
+      },
+      "id": "db4e12f2-a06f-4a0f-a69f-4af1536fe9b7",
+      "name": "Prepare LinkedIn Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $json.image_path }}",
+        "options": {
+          "dataPropertyName": "data",
+          "mimeType": "image/png"
+        }
+      },
+      "id": "68ecfa44-d021-49af-b92b-797177f5e668",
+      "name": "Read Approved Image",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [1060, 0]
+    },
+    {
+      "parameters": {
+        "authentication": "standard",
+        "resource": "post",
+        "operation": "create",
+        "postAs": "person",
+        "person": "={{ $('Prepare LinkedIn Post').first().json.author_id }}",
+        "text": "={{ $('Prepare LinkedIn Post').first().json.linkedin_text }}",
+        "shareMediaCategory": "IMAGE",
+        "binaryPropertyName": "data",
+        "additionalFields": {
+          "title": "={{ $('Prepare LinkedIn Post').first().json.image_title }}",
+          "visibility": "PUBLIC"
+        }
+      },
+      "id": "4c06184e-516f-478e-aeae-bd2cf9c62db7",
+      "name": "Publish on LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [1320, 0],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "lQvX3dKtnjPnNQB4",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH updated AS (UPDATE content_posts SET approval_status = 'published', published_at = now(), linkedin_post_urn = $2 WHERE id = $1::uuid AND approval_status = 'publishing' AND linkedin_post_urn IS NULL RETURNING id, hook, published_at, linkedin_post_urn), event AS (INSERT INTO system_events (event_type, entity_type, entity_id, payload) SELECT 'linkedin_published', 'content_post', id, jsonb_build_object('linkedin_post_urn', linkedin_post_urn) FROM updated) SELECT id AS post_id, hook, published_at, linkedin_post_urn FROM updated;",
+        "options": {
+          "queryReplacement": "={{ [ $('Claim Due Post').first().json.post_id, $json.urn ] }}"
+        }
+      },
+      "id": "9996da55-80fa-40e7-a083-8526495dad49",
+      "name": "Save Published Post",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1580, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{"node": "Claim Due Post", "type": "main", "index": 0}]]
+    },
+    "Every 15 Minutes": {
+      "main": [[{"node": "Claim Due Post", "type": "main", "index": 0}]]
+    },
+    "Claim Due Post": {
+      "main": [[{"node": "Get LinkedIn Member", "type": "main", "index": 0}]]
+    },
+    "Get LinkedIn Member": {
+      "main": [[{"node": "Prepare LinkedIn Post", "type": "main", "index": 0}]]
+    },
+    "Prepare LinkedIn Post": {
+      "main": [[{"node": "Read Approved Image", "type": "main", "index": 0}]]
+    },
+    "Read Approved Image": {
+      "main": [[{"node": "Publish on LinkedIn", "type": "main", "index": 0}]]
+    },
+    "Publish on LinkedIn": {
+      "main": [[{"node": "Save Published Post", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul",
+    "saveManualExecutions": true
+  },
+  "versionId": "3f420390-2c41-4ef2-a702-9d97e365933e",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

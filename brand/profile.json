@@ -1,0 +1,48 @@
+{
+  "owner": "Emre Cancioglu",
+  "language": "tr-TR",
+  "positioning": "OT, endustriyel yapay zeka ve dijital donusum lideri",
+  "audience": [
+    "uretim ve operasyon liderleri",
+    "OT ve otomasyon muhendisleri",
+    "endustriyel veri ve yapay zeka ekipleri",
+    "enerji ve surdurulebilirlik profesyonelleri"
+  ],
+  "content_pillars": [
+    "OT_VERI_MIMARISI",
+    "ENDUSTRIYEL_AI",
+    "ENERJI_SURDURULEBILIRLIK",
+    "URETIMDE_GENAI",
+    "OT_SIBER_GUVENLIK",
+    "TEKNIK_LIDERLIK"
+  ],
+  "palette": {
+    "navy": "#0B1F33",
+    "electric_blue": "#0099E5",
+    "turquoise": "#20C4CB",
+    "white": "#FFFFFF",
+    "light_gray": "#E9EEF2"
+  },
+  "visual_brand": {
+    "signature": "emrecancioglu.com",
+    "logo": "linkedin-app-logo.png",
+    "layout": "kisa baslik, 2-3 aciklayici ifade ve sag altta marka imzasi"
+  },
+  "hashtag_strategy": {
+    "count": 3,
+    "rule": "bir genis, iki konuya ozel etiket; yalnizca icerikle dogrudan ilgili etiketler"
+  },
+  "tone": [
+    "teknik ama anlasilir",
+    "somut ve alcakgonullu",
+    "ogretici",
+    "gereksiz kurumsal klise kullanmayan"
+  ],
+  "forbidden": [
+    "kanitsiz metrik",
+    "yapilmamis isi yapilmis gibi anlatma",
+    "gizli tesis veya musteri bilgisi",
+    "sahte fabrika fotografi",
+    "asiri emoji ve etkilesim tuzagi"
+  ]
+}

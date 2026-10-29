@@ -1,0 +1,182 @@
+{
+  "id": "yMlmlhDNYYD6E0aB",
+  "name": "LinkedIn 02 - Haftalik Turkce Taslak",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e822ae5d-57e8-43fc-943d-7305226e830a",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, -120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 8,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "id": "f51f9160-67df-4e8b-a378-29e45850e203",
+      "name": "Monday 08:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 120]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE evidence_items SET status = 'reserved' WHERE id = (SELECT id FROM evidence_items WHERE status = 'new' AND confidentiality <> 'private' ORDER BY CASE WHEN 'technology_radar'=ANY(tags) OR source_ref LIKE 'evergreen:%' THEN 0 ELSE 1 END, CASE kind WHEN 'real_work' THEN 1 WHEN 'publication' THEN 2 WHEN 'lab_demo' THEN 3 WHEN 'lesson' THEN 4 ELSE 5 END, created_at LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING id, kind, title, situation, action_text, result_text, source_ref, proof_level, confidentiality, approved_claims, tags;",
+        "options": {}
+      },
+      "id": "d2610258-6e5c-49a3-96f3-5dc78e7a47b0",
+      "name": "Reserve Evidence",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [260, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const evidence = $json;\nconst instructions = `Sen Emre Cancioglu icin teknik LinkedIn taslaklari hazirlayan bir editorsun. Uzmanlik alanlari OT/IIoT, endustriyel yapay zeka, enerji yonetimi, uretim analitigi, OPC UA, MQTT, Unified Namespace, OT siber guvenlik ve teknik liderliktir.\n\nDEGISMEZ KURALLAR:\n1. Yalnizca verilen evidence_item icindeki bilgileri gercek calisma veya sonuc olarak kullan.\n2. Yapilmamis isi yapilmis gibi anlatma; yeni metrik, musteri, tesis, odul, tarih, arac veya sonuc uretme.\n3. proof_level=idea ise gecmis basari dili degil ogretici/gorus dili kullan.\n4. kind=lab_demo ise yerel demo, simulasyon veya sentetik veri oldugunu acikca soyle.\n5. confidentiality=anonymize ise sirket, tesis, hat, musteri ve kisi adi verme.\n6. Her gecmis zamanli veya olculebilir iddiayi claims listesine ekle ve evidence id ile eslestir.\n7. Iddia approved_claims icinde anlam olarak desteklenmiyorsa allowed=false yap ve metinde kullanma.\n8. Turkce, dogal, teknik fakat anlasilir yaz. Kurumsal klise, asiri ovgu ve yapay etkilesim tuzagi kullanma.\n9. 900-1500 karakter hedefle; kisa paragraflar, gerekirse 2-4 madde ve en fazla 5 hashtag kullan.\n10. Emoji kullanma veya en fazla bir tane kullan. Tek bir samimi soru ile bitir.\n11. risk_flags yalnizca gercek bir engelleyici sorun varsa tanimli hata kodlarini icersin. Aciklama, guvence veya inceleme notu ekleme. Sorun yoksa bos dizi dondur.`;\nconst riskCodes = ['PRIVATE_EVIDENCE','CONFIDENTIAL_DETAIL','UNMAPPED_CLAIM','UNSUPPORTED_METRIC','DEMO_NOT_DISCLOSED','EVIDENCE_ID_MISMATCH','ORGANIZATION_NAME_EXPOSED','CAUSALITY_OVERCLAIM'];\nconst schema = {\n  type: 'object',\n  additionalProperties: false,\n  properties: {\n    pillar: { type: 'string', enum: ['OT_VERI_MIMARISI','ENDUSTRIYEL_AI','ENERJI_SURDURULEBILIRLIK','URETIMDE_GENAI','OT_SIBER_GUVENLIK','TEKNIK_LIDERLIK'] },\n    hook: { type: 'string' },\n    body: { type: 'string' },\n    cta: { type: 'string' },\n    hashtags: { type: 'array', items: { type: 'string' } },\n    claims: {\n      type: 'array',\n      items: {\n        type: 'object',\n        additionalProperties: false,\n        properties: {\n          claim: { type: 'string' },\n          evidence_id: { type: 'string' },\n          allowed: { type: 'boolean' },\n          reason: { type: 'string' }\n        },\n        required: ['claim','evidence_id','allowed','reason']\n      }\n    },\n    image_brief: { type: 'string' },\n    risk_flags: { type: 'array', items: { type: 'string', enum: riskCodes } }\n  },\n  required: ['pillar','hook','body','cta','hashtags','claims','image_brief','risk_flags']\n};\nreturn [{ json: { request_body: {\n  model: 'gpt-6.1-terra',\n  reasoning: { effort: 'low' },\n  instructions,\n  input: [{ role: 'user', content: [{ type: 'input_text', text: `evidence_item:\\n${JSON.stringify(evidence)}` }] }],\n  text: { format: { type: 'json_schema', name: 'linkedin_post_draft', strict: true, schema } },\n  store: false\n} } }];"
+      },
+      "id": "685b843f-1d27-4e17-aa55-7d699290c27f",
+      "name": "Build OpenAI Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestBody = { ...$json.request_body };\nrequestBody.instructions = `${requestBody.instructions}\\n12. Telegram'da gorsel, tam metin ve dugmeler tek mesajda gosterilecek. hook, body ve cta alanlarinin toplam uzunlugu 650-780 karakter arasinda olmali; 780 karakteri kesinlikle asma. Kaynak URL ve hashtagler bu sinira dahil degildir.`;\nreturn [{ json: { request_body: requestBody } }];"
+      },
+      "id": "a1b6d8ca-a8ba-4e06-a90f-89d42ef8dced",
+      "name": "Apply Telegram Length",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.request_body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "d26d9e49-0873-4cf0-83c1-54780fc13a88",
+      "name": "OpenAI Structured Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 0],
+      "credentials": {
+        "openAiApi": {
+          "id": "OzOsPk2xMu5RlMeJ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nif (response.error) throw new Error(`OpenAI error: ${JSON.stringify(response.error)}`);\nif (response.status && response.status !== 'completed') throw new Error(`OpenAI response status: ${response.status}`);\nconst message = (response.output ?? []).find((item) => item.type === 'message');\nconst refusal = message?.content?.find((item) => item.type === 'refusal');\nif (refusal) throw new Error(`OpenAI refusal: ${refusal.refusal}`);\nconst outputText = message?.content?.find((item) => item.type === 'output_text')?.text;\nif (!outputText) throw new Error('OpenAI output_text bulunamadi');\nconst draft = JSON.parse(outputText);\nconst evidence = $('Reserve Evidence').first().json;\nconst required = ['pillar','hook','body','cta','hashtags','claims','image_brief','risk_flags'];\nfor (const key of required) {\n  if (!(key in draft)) throw new Error(`Taslak alani eksik: ${key}`);\n}\nif (!Array.isArray(draft.hashtags) || draft.hashtags.length > 5) draft.risk_flags.push('HASHTAG_LIMIT');\nif (!Array.isArray(draft.claims)) throw new Error('claims dizi olmali');\nif (!Array.isArray(draft.risk_flags)) throw new Error('risk_flags dizi olmali');\nconst text = `${draft.hook}\\n${draft.body}\\n${draft.cta}`;\nconst numericClaim = /(?:%|yuzde|\\b\\d+(?:[.,]\\d+)?\\b)/i.test(text.replace(/4\\.0/g, ''));\nif (numericClaim && !draft.claims.some((claim) => claim.allowed)) draft.risk_flags.push('UNMAPPED_NUMERIC_CLAIM');\nif (draft.claims.some((claim) => !claim.allowed)) draft.risk_flags.push('DISALLOWED_CLAIM');\nif (evidence.kind === 'lab_demo' && !/(demo|simulasyon|sentetik)/i.test(text)) draft.risk_flags.push('DEMO_NOT_DISCLOSED');\nif (evidence.confidentiality === 'private') draft.risk_flags.push('PRIVATE_EVIDENCE');\nfor (const claim of draft.claims) {\n  if (claim.evidence_id !== evidence.id) {\n    claim.allowed = false;\n    claim.reason = 'Evidence ID eslesmiyor';\n    draft.risk_flags.push('EVIDENCE_ID_MISMATCH');\n  }\n}\nconst uniqueRisks = [...new Set(draft.risk_flags.filter(Boolean))];\nconst approvalStatus = uniqueRisks.length ? 'blocked' : 'needs_review';\nreturn [{ json: {\n  evidence_id: evidence.id,\n  pillar: draft.pillar,\n  hook: draft.hook.trim(),\n  body: draft.body.trim(),\n  cta: draft.cta.trim(),\n  hashtags: draft.hashtags,\n  claims: draft.claims,\n  image_brief: draft.image_brief.trim(),\n  risk_flags: uniqueRisks,\n  approval_status: approvalStatus,\n  text_model: response.model ?? 'gpt-6.1-terra',\n  openai_response_id: response.id ?? null,\n  token_usage: response.usage ?? null\n} }];"
+      },
+      "id": "10a9d789-bb93-465f-868e-22ec3d7c7c86",
+      "name": "Validate and Guard Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const draft = { ...$json };\nconst sourceRef = String($('Reserve Evidence').first().json.source_ref || '').trim();\nconst combined = `${draft.hook || ''} ${draft.body || ''} ${draft.cta || ''}`;\nif (/^https?:\\/\\//i.test(sourceRef) && !combined.includes(sourceRef)) {\n  draft.cta = `${String(draft.cta || '').trim()}\\n\\nKaynak: ${sourceRef}`.trim();\n}\nreturn [{ json: draft }];"
+      },
+      "id": "8e350820-9720-4e69-a27e-6128fdc88c1f",
+      "name": "Ensure Source Attribution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (INSERT INTO content_posts (evidence_id, pillar, hook, body, cta, hashtags, image_brief, risk_flags, approval_status, text_model, openai_response_id, token_usage) VALUES ($1::uuid, $2, $3, $4, $5, $6::text[], $7, $8::text[], $9, $10, NULLIF($11, ''), NULLIF($12, '')::jsonb) RETURNING id), claim_rows AS (INSERT INTO claim_map (post_id, evidence_id, claim_text, allowed, reason) SELECT inserted.id, NULLIF(claim->>'evidence_id', '')::uuid, claim->>'claim', COALESCE((claim->>'allowed')::boolean, false), COALESCE(claim->>'reason', '') FROM inserted CROSS JOIN jsonb_array_elements($13::jsonb) AS claim RETURNING id), evidence_used AS (UPDATE evidence_items SET status = 'used', used_at = now() WHERE id = $1::uuid RETURNING id) SELECT inserted.id AS post_id, $9 AS approval_status FROM inserted;",
+        "options": {
+          "queryReplacement": "={{ [ $json.evidence_id, $json.pillar, $json.hook, $json.body, $json.cta, $json.hashtags, $json.image_brief, $json.risk_flags, $json.approval_status, $json.text_model, $json.openai_response_id ?? '', JSON.stringify($json.token_usage ?? {}), JSON.stringify($json.claims) ] }}"
+        }
+      },
+      "id": "25cf5e17-c0ad-4d66-bccf-bbd37554475a",
+      "name": "Save Draft and Claims",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1480, 0],
+      "credentials": {
+        "postgres": {
+          "id": "RCUmTRfZRsrZRn82",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Reserve Evidence", "type": "main", "index": 0 }]]
+    },
+    "Monday 08:30": {
+      "main": [[{ "node": "Reserve Evidence", "type": "main", "index": 0 }]]
+    },
+    "Reserve Evidence": {
+      "main": [[{ "node": "Build OpenAI Request", "type": "main", "index": 0 }]]
+    },
+    "Build OpenAI Request": {
+      "main": [[{ "node": "Apply Telegram Length", "type": "main", "index": 0 }]]
+    },
+    "Apply Telegram Length": {
+      "main": [[{ "node": "OpenAI Structured Draft", "type": "main", "index": 0 }]]
+    },
+    "OpenAI Structured Draft": {
+      "main": [[{ "node": "Validate and Guard Draft", "type": "main", "index": 0 }]]
+    },
+    "Validate and Guard Draft": {
+      "main": [[{ "node": "Ensure Source Attribution", "type": "main", "index": 0 }]]
+    },
+    "Ensure Source Attribution": {
+      "main": [[{ "node": "Save Draft and Claims", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul",
+    "saveManualExecutions": true
+  },
+  "versionId": "9976762e-3c27-4f3f-ae62-7947f7077804",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

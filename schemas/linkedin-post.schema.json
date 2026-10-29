@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LinkedInPostDraft",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "pillar": {
+      "type": "string",
+      "enum": [
+        "OT_VERI_MIMARISI",
+        "ENDUSTRIYEL_AI",
+        "ENERJI_SURDURULEBILIRLIK",
+        "URETIMDE_GENAI",
+        "OT_SIBER_GUVENLIK",
+        "TEKNIK_LIDERLIK"
+      ]
+    },
+    "hook": { "type": "string" },
+    "body": { "type": "string" },
+    "cta": { "type": "string" },
+    "hashtags": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "string" }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim": { "type": "string" },
+          "evidence_id": { "type": "string" },
+          "allowed": { "type": "boolean" },
+          "reason": { "type": "string" }
+        },
+        "required": ["claim", "evidence_id", "allowed", "reason"]
+      }
+    },
+    "image_brief": { "type": "string" },
+    "image_title": { "type": "string", "maxLength": 64 },
+    "image_points": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": { "type": "string", "maxLength": 38 }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": [
+    "pillar",
+    "hook",
+    "body",
+    "cta",
+    "hashtags",
+    "claims",
+    "image_brief",
+    "risk_flags"
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "name": "LinkedIn 01 - Kanit ve Fikir Girisi",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "linkedin-evidence-intake",
+        "formTitle": "LinkedIn Icerik Kaniti / Fikri",
+        "formDescription": "Gercek calisma, yerel demo, teknik ders veya gorus ekleyin. Gizli tesis/musteri verisi girmeyin.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Baslik",
+              "fieldName": "title",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Icerik turu",
+              "fieldName": "kind",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "real_work" },
+                  { "option": "lab_demo" },
+                  { "option": "lesson" },
+                  { "option": "opinion" },
+                  { "option": "publication" }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Problem / baglam",
+              "fieldName": "situation",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Ne yaptim / yaklasim",
+              "fieldName": "action_text",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Sonuc (yoksa bos birakin)",
+              "fieldName": "result_text",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Kaynak referansi",
+              "fieldName": "source_ref",
+              "fieldType": "text",
+              "placeholder": "Yayin URL, CV maddesi veya yerel dosya"
+            },
+            {
+              "fieldLabel": "Kanit seviyesi",
+              "fieldName": "proof_level",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "verified" },
+                  { "option": "self_reported" },
+                  { "option": "demo" },
+                  { "option": "idea" }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Gizlilik",
+              "fieldName": "confidentiality",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "public" },
+                  { "option": "anonymize" },
+                  { "option": "private" }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Kullanilmasina izin verilen iddialar",
+              "fieldName": "approved_claims_text",
+              "fieldType": "textarea",
+              "placeholder": "Her satira bir cumle"
+            },
+            {
+              "fieldLabel": "Etiketler",
+              "fieldName": "tags_text",
+              "fieldType": "text",
+              "placeholder": "mqtt, opc-ua, enerji"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "buttonLabel": "Kaydet",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Kayit alindi. Taslak olusturulmadan once kanit ve gizlilik kontrolunden gececek."
+            }
+          }
+        }
+      },
+      "id": "985cb1ce-cd65-4ca3-89c3-349f31d0fc7f",
+      "name": "Evidence Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [0, 0],
+      "webhookId": "b46fa78c-79c2-470a-a08c-a8daf62f6546"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allowed = {\n  kind: ['real_work', 'lab_demo', 'lesson', 'opinion', 'publication'],\n  proof: ['verified', 'self_reported', 'demo', 'idea'],\n  confidentiality: ['public', 'anonymize', 'private'],\n};\n\nconst input = $json;\nconst required = ['title', 'kind', 'situation', 'action_text', 'proof_level', 'confidentiality'];\nfor (const key of required) {\n  if (!String(input[key] ?? '').trim()) throw new Error(`Eksik alan: ${key}`);\n}\nif (!allowed.kind.includes(input.kind)) throw new Error('Gecersiz kind');\nif (!allowed.proof.includes(input.proof_level)) throw new Error('Gecersiz proof_level');\nif (!allowed.confidentiality.includes(input.confidentiality)) throw new Error('Gecersiz confidentiality');\nif (input.kind === 'lab_demo' && input.proof_level !== 'demo') {\n  throw new Error('lab_demo icin proof_level demo olmalidir');\n}\nif (input.proof_level === 'idea' && input.kind === 'real_work') {\n  throw new Error('idea kanit seviyesi real_work olarak kaydedilemez');\n}\nconst approvedClaims = String(input.approved_claims_text ?? '')\n  .split(/\\r?\\n/)\n  .map((value) => value.trim())\n  .filter(Boolean);\nconst tags = String(input.tags_text ?? '')\n  .split(',')\n  .map((value) => value.trim().toLowerCase())\n  .filter(Boolean);\n\nreturn [{ json: {\n  title: String(input.title).trim(),\n  kind: input.kind,\n  situation: String(input.situation).trim(),\n  action_text: String(input.action_text).trim(),\n  result_text: String(input.result_text ?? '').trim() || null,\n  source_ref: String(input.source_ref ?? '').trim() || null,\n  proof_level: input.proof_level,\n  confidentiality: input.confidentiality,\n  approved_claims: approvedClaims,\n  tags,\n} }];"
+      },
+      "id": "5ad61611-1923-40cb-8777-8e4a05b123de",
+      "name": "Normalize and Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO evidence_items (kind, title, situation, action_text, result_text, source_ref, proof_level, confidentiality, approved_claims, tags) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9::jsonb, $10::text[]) RETURNING id, title, kind, proof_level, confidentiality, status, created_at;",
+        "options": {
+          "queryReplacement": "={{ [ $json.kind, $json.title, $json.situation, $json.action_text, $json.result_text ?? '', $json.source_ref ?? '', $json.proof_level, $json.confidentiality, JSON.stringify($json.approved_claims), $json.tags ] }}"
+        }
+      },
+      "id": "0c9c4862-f82c-4b92-99f9-0a7d8cb8b88a",
+      "name": "Insert Evidence",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [520, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Evidence Form": {
+      "main": [[{ "node": "Normalize and Guard", "type": "main", "index": 0 }]]
+    },
+    "Normalize and Guard": {
+      "main": [[{ "node": "Insert Evidence", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul"
+  },
+  "versionId": "c3dc2e8a-b451-4a28-92e1-2c76862a993b",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
