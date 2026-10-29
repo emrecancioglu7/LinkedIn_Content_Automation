@@ -8,7 +8,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, -100]
+      "position": [
+        0,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -25,19 +28,25 @@
       "name": "Every Minute",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 100]
+      "position": [
+        0,
+        100
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "WITH candidate AS (SELECT s.id FROM system_events s JOIN content_posts p ON p.id = s.entity_id WHERE s.event_type IN ('telegram_regenerate_text', 'telegram_regenerate_both') AND NOT (s.payload ? 'processed_at') AND NOT (s.payload ? 'claimed_at') AND p.approval_status IN ('regenerating_text', 'regenerating_both') ORDER BY s.id LIMIT 1 FOR UPDATE SKIP LOCKED), claimed AS (UPDATE system_events s SET payload = s.payload || jsonb_build_object('claimed_at', now()) FROM candidate WHERE s.id = candidate.id RETURNING s.id AS event_id, s.event_type, s.entity_id AS post_id) SELECT claimed.event_id, claimed.event_type, p.id AS current_post_id, p.pillar AS current_pillar, p.hook AS current_hook, p.body AS current_body, p.cta AS current_cta, p.hashtags AS current_hashtags, p.image_brief AS current_image_brief, p.image_path AS current_image_path, e.id AS evidence_id, e.kind, e.title, e.situation, e.action_text, e.result_text, e.source_ref, e.proof_level, e.confidentiality, e.approved_claims, e.tags FROM claimed JOIN content_posts p ON p.id = claimed.post_id JOIN evidence_items e ON e.id = p.evidence_id;",
+        "query": "WITH candidate AS (SELECT s.id FROM system_events s JOIN content_posts p ON p.id = s.entity_id WHERE s.event_type IN ('telegram_regenerate_text', 'telegram_regenerate_both') AND NOT (s.payload ? 'processed_at') AND NOT (s.payload ? 'claimed_at') AND p.approval_status IN ('regenerating_text', 'regenerating_both') ORDER BY s.id LIMIT 1 FOR UPDATE SKIP LOCKED), claimed AS (UPDATE system_events s SET payload = s.payload || jsonb_build_object('claimed_at', now()) FROM candidate WHERE s.id = candidate.id RETURNING s.id AS event_id, s.event_type, s.entity_id AS post_id) SELECT claimed.event_id, claimed.event_type, p.id AS current_post_id, p.pillar AS current_pillar, p.hook AS current_hook, p.body AS current_body, p.cta AS current_cta, p.hashtags AS current_hashtags, p.image_brief AS current_image_brief, p.visual_spec AS current_visual_spec, p.visual_spec AS current_visual_spec, p.visual_spec AS current_visual_spec, p.visual_spec AS current_visual_spec, p.visual_spec AS current_visual_spec, p.visual_spec AS current_visual_spec, p.image_path AS current_image_path, e.id AS evidence_id, e.kind, e.title, e.situation, e.action_text, e.result_text, e.source_ref, e.proof_level, e.confidentiality, e.approved_claims, e.tags FROM claimed JOIN content_posts p ON p.id = claimed.post_id JOIN evidence_items e ON e.id = p.evidence_id;",
         "options": {}
       },
       "id": "66d97b5e-1699-4467-9c8d-eaab7daf0aa9",
       "name": "Claim Regeneration",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [260, 0],
+      "position": [
+        260,
+        0
+      ],
       "credentials": {
         "postgres": {
           "id": "RCUmTRfZRsrZRn82",
@@ -47,13 +56,16 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $json;\nconst instructions = `Sen Emre Cancioglu icin Turkce teknik LinkedIn taslagi yenileyen bir editorsun. Yalnizca verilen evidence_item icindeki bilgileri gercek calisma veya sonuc olarak kullan. Yapilmamis isi yapilmis gibi anlatma; yeni metrik, musteri, tesis, odul, tarih, arac veya sonuc uretme. proof_level=idea ise ogretici veya gorus dili kullan. kind=lab_demo ise demo, simulasyon veya sentetik veri oldugunu acikca belirt. confidentiality=anonymize ise sirket, tesis, hat, musteri ve kisi adi verme. Her gecmis zamanli veya olculebilir iddiayi claims listesine ekle. Turkce, dogal ve teknik fakat anlasilir yaz. 900-1500 karakter hedefle, en fazla 5 hashtag ve tek bir samimi soru kullan. Onceki taslagi farkli bir anlatim, acilis ve paragraf yapisiyla yeniden yaz. Kanit disina cikma.`;\nconst riskCodes = ['PRIVATE_EVIDENCE','CONFIDENTIAL_DETAIL','UNMAPPED_CLAIM','UNSUPPORTED_METRIC','DEMO_NOT_DISCLOSED','EVIDENCE_ID_MISMATCH','ORGANIZATION_NAME_EXPOSED','CAUSALITY_OVERCLAIM'];\nconst schema = { type: 'object', additionalProperties: false, properties: { pillar: { type: 'string', enum: ['OT_VERI_MIMARISI','ENDUSTRIYEL_AI','ENERJI_SURDURULEBILIRLIK','URETIMDE_GENAI','OT_SIBER_GUVENLIK','TEKNIK_LIDERLIK'] }, hook: { type: 'string' }, body: { type: 'string' }, cta: { type: 'string' }, hashtags: { type: 'array', items: { type: 'string' } }, claims: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { claim: { type: 'string' }, evidence_id: { type: 'string' }, allowed: { type: 'boolean' }, reason: { type: 'string' } }, required: ['claim','evidence_id','allowed','reason'] } }, image_brief: { type: 'string' }, risk_flags: { type: 'array', items: { type: 'string', enum: riskCodes } } }, required: ['pillar','hook','body','cta','hashtags','claims','image_brief','risk_flags'] };\nconst evidence = { id: item.evidence_id, kind: item.kind, title: item.title, situation: item.situation, action_text: item.action_text, result_text: item.result_text, source_ref: item.source_ref, proof_level: item.proof_level, confidentiality: item.confidentiality, approved_claims: item.approved_claims, tags: item.tags };\nconst previous = { pillar: item.current_pillar, hook: item.current_hook, body: item.current_body, cta: item.current_cta, hashtags: item.current_hashtags, image_brief: item.current_image_brief };\nreturn [{ json: { request_body: { model: 'gpt-6.1-terra', reasoning: { effort: 'low' }, instructions, input: [{ role: 'user', content: [{ type: 'input_text', text: `evidence_item:\\n${JSON.stringify(evidence)}\\n\\nonceki_taslak:\\n${JSON.stringify(previous)}` }] }], text: { format: { type: 'json_schema', name: 'linkedin_regenerated_draft', strict: true, schema } }, store: false } } }];"
+        "jsCode": "const item = $json;\nconst instructions = \"Sen Emre Cancioglu icin Turkce teknik LinkedIn taslagi yenileyen bir editorsun. Yalnizca evidence_item icindeki bilgileri gercek calisma veya sonuc olarak kullan. Yapilmamis isi yapilmis gibi anlatma; yeni metrik, musteri, tesis, odul, tarih, arac veya sonuc uretme. proof_level=idea ise ogretici veya gorus dili kullan. kind=lab_demo ise demo, simulasyon veya sentetik veri oldugunu acikca belirt. confidentiality=anonymize ise sirket, tesis, hat, musteri ve kisi adi verme. Her gecmis zamanli veya olculebilir iddiayi claims listesine ekle. Turkce, dogal ve teknik fakat anlasilir yaz. En fazla 5 hashtag ve tek bir samimi soru kullan. Onceki taslagi farkli bir anlatim, acilis ve paragraf yapisiyla yeniden yaz. Kanit disina cikma.\\n\\nGORSEL PLAN KURALLARI:\\n- visual_spec, post konusunu metin okunmadan da anlatan bir teknik infografik plani olmali.\\n- Konuya gore process_flow, layered_architecture, comparison, cause_effect veya cycle turlerinden en uygununu sec; her konuyu dort asamali akisa zorlama.\\n- technical_title 2-4 kelimelik teknik kavram; international_name yaygin Ingilizce ad veya kisaltma; curiosity_subtitle en fazla 8-12 kelimelik merak uyandiran Turkce ifade olsun.\\n- Konunun karmasikligina gore 3-5 stage uret. label en fazla 3 kelime, description en fazla 6-8 kelime olsun. Ayni seyi tekrar eden asamalar uretme.\\n- connections gercek teknik iliskiyi gostersin. blocked veya conditional yalniz konu gerektiriyorsa kullan.\\n- 3-4 takeaway uret. Her biri farkli bir fayda, risk veya karar noktasini ozetlesin; post cumlelerini tekrar etmesin.\\n- Ikonlari yalniz izin verilen listeden anlamsal olarak sec.\\n- Gorsel planda musteri, sirket, tesis, kisi, uydurma metrik veya kanitta olmayan sonuc kullanma.\";\nconst schema = {\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"pillar\":{\"type\":\"string\",\"enum\":[\"OT_VERI_MIMARISI\",\"ENDUSTRIYEL_AI\",\"ENERJI_SURDURULEBILIRLIK\",\"URETIMDE_GENAI\",\"OT_SIBER_GUVENLIK\",\"TEKNIK_LIDERLIK\"]},\"hook\":{\"type\":\"string\"},\"body\":{\"type\":\"string\"},\"cta\":{\"type\":\"string\"},\"hashtags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"claims\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"claim\":{\"type\":\"string\"},\"evidence_id\":{\"type\":\"string\"},\"allowed\":{\"type\":\"boolean\"},\"reason\":{\"type\":\"string\"}},\"required\":[\"claim\",\"evidence_id\",\"allowed\",\"reason\"]}},\"image_brief\":{\"type\":\"string\"},\"visual_spec\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"layout_type\":{\"type\":\"string\",\"enum\":[\"process_flow\",\"layered_architecture\",\"comparison\",\"cause_effect\",\"cycle\"]},\"technical_title\":{\"type\":\"string\"},\"international_name\":{\"type\":\"string\"},\"curiosity_subtitle\":{\"type\":\"string\"},\"stages\":{\"type\":\"array\",\"minItems\":3,\"maxItems\":5,\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"label\":{\"type\":\"string\"},\"description\":{\"type\":\"string\"},\"icon\":{\"type\":\"string\",\"enum\":[\"user\",\"identity\",\"shield\",\"lock\",\"network\",\"server\",\"database\",\"sensor\",\"plc\",\"ai\",\"energy\",\"analytics\",\"approval\",\"decision\",\"eye\",\"pulse\",\"cloud\",\"gateway\"]},\"state\":{\"type\":\"string\",\"enum\":[\"normal\",\"controlled\",\"risk\",\"outcome\"]}},\"required\":[\"label\",\"description\",\"icon\",\"state\"]}},\"connections\":{\"type\":\"array\",\"minItems\":2,\"maxItems\":7,\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"from\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":5},\"to\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":5},\"type\":{\"type\":\"string\",\"enum\":[\"flow\",\"allowed\",\"blocked\",\"conditional\",\"bidirectional\"]}},\"required\":[\"from\",\"to\",\"type\"]}},\"takeaways\":{\"type\":\"array\",\"minItems\":3,\"maxItems\":4,\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"label\":{\"type\":\"string\"},\"description\":{\"type\":\"string\"},\"icon\":{\"type\":\"string\",\"enum\":[\"user\",\"identity\",\"shield\",\"lock\",\"network\",\"server\",\"database\",\"sensor\",\"plc\",\"ai\",\"energy\",\"analytics\",\"approval\",\"decision\",\"eye\",\"pulse\",\"cloud\",\"gateway\"]}},\"required\":[\"label\",\"description\",\"icon\"]}}},\"required\":[\"layout_type\",\"technical_title\",\"international_name\",\"curiosity_subtitle\",\"stages\",\"connections\",\"takeaways\"]},\"risk_flags\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"PRIVATE_EVIDENCE\",\"CONFIDENTIAL_DETAIL\",\"UNMAPPED_CLAIM\",\"UNSUPPORTED_METRIC\",\"DEMO_NOT_DISCLOSED\",\"EVIDENCE_ID_MISMATCH\",\"ORGANIZATION_NAME_EXPOSED\",\"CAUSALITY_OVERCLAIM\"]}}},\"required\":[\"pillar\",\"hook\",\"body\",\"cta\",\"hashtags\",\"claims\",\"image_brief\",\"visual_spec\",\"risk_flags\"]};\nconst evidence = { id: item.evidence_id, kind: item.kind, title: item.title, situation: item.situation, action_text: item.action_text, result_text: item.result_text, source_ref: item.source_ref, proof_level: item.proof_level, confidentiality: item.confidentiality, approved_claims: item.approved_claims, tags: item.tags };\nconst previous = { pillar: item.current_pillar, hook: item.current_hook, body: item.current_body, cta: item.current_cta, hashtags: item.current_hashtags, image_brief: item.current_image_brief, visual_spec: item.current_visual_spec };\nreturn [{ json: { request_body: { model: 'gpt-6.1-terra', reasoning: { effort: 'low' }, instructions, input: [{ role: 'user', content: [{ type: 'input_text', text: 'evidence_item:\\n' + JSON.stringify(evidence) + '\\n\\nonceki_taslak:\\n' + JSON.stringify(previous) }] }], text: { format: { type: 'json_schema', name: 'linkedin_regenerated_draft_v2', strict: true, schema } }, store: false } } }];"
       },
       "id": "2743244f-0831-4ef3-9c43-ed9fe5583f3c",
       "name": "Build Regeneration Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [520, 0]
+      "position": [
+        520,
+        0
+      ]
     },
     {
       "parameters": {
@@ -63,7 +75,10 @@
       "name": "Apply Telegram Length",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [650, 0]
+      "position": [
+        650,
+        0
+      ]
     },
     {
       "parameters": {
@@ -74,20 +89,28 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify($json.request_body) }}",
-        "options": { "timeout": 120000 }
+        "options": {
+          "timeout": 120000
+        }
       },
       "id": "4d9c95ec-ed5c-4a95-88bf-7637f821c60a",
       "name": "OpenAI Regenerate Draft",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [780, 0],
+      "position": [
+        780,
+        0
+      ],
       "credentials": {
         "openAiApi": {
           "id": "OzOsPk2xMu5RlMeJ",
@@ -97,13 +120,16 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $json;\nif (response.error) throw new Error(`OpenAI error: ${JSON.stringify(response.error)}`);\nconst message = (response.output ?? []).find((item) => item.type === 'message');\nconst outputText = message?.content?.find((item) => item.type === 'output_text')?.text;\nif (!outputText) throw new Error('OpenAI output_text bulunamadi');\nconst draft = JSON.parse(outputText);\nconst request = $('Claim Regeneration').first().json;\nif (!Array.isArray(draft.hashtags) || draft.hashtags.length > 5) throw new Error('Hashtag siniri asildi');\nif (!Array.isArray(draft.claims) || !Array.isArray(draft.risk_flags)) throw new Error('Gecersiz claims veya risk_flags');\nfor (const claim of draft.claims) { if (claim.evidence_id !== request.evidence_id) { claim.allowed = false; claim.reason = 'Evidence ID eslesmiyor'; draft.risk_flags.push('EVIDENCE_ID_MISMATCH'); } }\nif (draft.claims.some((claim) => !claim.allowed)) draft.risk_flags.push('UNMAPPED_CLAIM');\nconst text = `${draft.hook}\\n${draft.body}\\n${draft.cta}`;\nif (request.kind === 'lab_demo' && !/(demo|simulasyon|sentetik)/i.test(text)) draft.risk_flags.push('DEMO_NOT_DISCLOSED');\nconst risks = [...new Set(draft.risk_flags.filter(Boolean))];\nreturn [{ json: { event_id: request.event_id, event_type: request.event_type, post_id: request.current_post_id, evidence_id: request.evidence_id, pillar: draft.pillar, hook: draft.hook.trim(), body: draft.body.trim(), cta: draft.cta.trim(), hashtags: draft.hashtags, claims: draft.claims, image_brief: draft.image_brief.trim(), risk_flags: risks, approval_status: risks.length ? 'blocked' : 'needs_review', text_model: response.model ?? 'gpt-6.1-terra', openai_response_id: response.id ?? null, token_usage: response.usage ?? null } }];"
+        "jsCode": "const response = $json;\nif (response.error) throw new Error('OpenAI error: ' + JSON.stringify(response.error));\nconst message = (response.output || []).find((item) => item.type === 'message');\nconst outputText = message?.content?.find((item) => item.type === 'output_text')?.text;\nif (!outputText) throw new Error('OpenAI output_text bulunamadi');\nconst draft = JSON.parse(outputText);\nconst request = $('Claim Regeneration').first().json;\nconst layouts = [\"process_flow\",\"layered_architecture\",\"comparison\",\"cause_effect\",\"cycle\"];\nconst icons = [\"user\",\"identity\",\"shield\",\"lock\",\"network\",\"server\",\"database\",\"sensor\",\"plc\",\"ai\",\"energy\",\"analytics\",\"approval\",\"decision\",\"eye\",\"pulse\",\"cloud\",\"gateway\"];\nfunction clean(value, max) { return String(value || '').replace(/\\s+/g, ' ').trim().slice(0, max); }\nfunction validateVisualSpec(spec) {\n  if (!spec || !layouts.includes(spec.layout_type)) throw new Error('Gecersiz visual_spec layout_type');\n  spec.technical_title = clean(spec.technical_title, 42);\n  spec.international_name = clean(spec.international_name, 48);\n  spec.curiosity_subtitle = clean(spec.curiosity_subtitle, 92);\n  if (!Array.isArray(spec.stages) || spec.stages.length < 3 || spec.stages.length > 5) throw new Error('visual_spec stages 3-5 olmali');\n  spec.stages = spec.stages.map((stage) => ({ label: clean(stage.label, 26), description: clean(stage.description, 58), icon: icons.includes(stage.icon) ? stage.icon : 'decision', state: ['normal','controlled','risk','outcome'].includes(stage.state) ? stage.state : 'normal' }));\n  if (!Array.isArray(spec.connections) || spec.connections.length < 2 || spec.connections.length > 7) throw new Error('Gecersiz visual_spec connections');\n  spec.connections = spec.connections.filter((edge) => Number.isInteger(edge.from) && Number.isInteger(edge.to) && edge.from >= 1 && edge.to >= 1 && edge.from <= spec.stages.length && edge.to <= spec.stages.length && edge.from !== edge.to && ['flow','allowed','blocked','conditional','bidirectional'].includes(edge.type));\n  if (spec.connections.length < 2) throw new Error('Yetersiz gecerli visual_spec connection');\n  if (!Array.isArray(spec.takeaways) || spec.takeaways.length < 3 || spec.takeaways.length > 4) throw new Error('visual_spec takeaways 3-4 olmali');\n  spec.takeaways = spec.takeaways.map((item) => ({ label: clean(item.label, 24), description: clean(item.description, 46), icon: icons.includes(item.icon) ? item.icon : 'eye' }));\n  return spec;\n}\ndraft.visual_spec = validateVisualSpec(draft.visual_spec);\nif (!Array.isArray(draft.hashtags) || draft.hashtags.length > 5) throw new Error('Hashtag siniri asildi');\nif (!Array.isArray(draft.claims) || !Array.isArray(draft.risk_flags)) throw new Error('Gecersiz claims veya risk_flags');\nfor (const claim of draft.claims) { if (claim.evidence_id !== request.evidence_id) { claim.allowed = false; claim.reason = 'Evidence ID eslesmiyor'; draft.risk_flags.push('EVIDENCE_ID_MISMATCH'); } }\nif (draft.claims.some((claim) => !claim.allowed)) draft.risk_flags.push('UNMAPPED_CLAIM');\nconst text = draft.hook + '\\n' + draft.body + '\\n' + draft.cta;\nif (request.kind === 'lab_demo' && !/(demo|simulasyon|sentetik)/i.test(text)) draft.risk_flags.push('DEMO_NOT_DISCLOSED');\nconst risks = [...new Set(draft.risk_flags.filter(Boolean))];\nreturn [{ json: { event_id: request.event_id, event_type: request.event_type, post_id: request.current_post_id, evidence_id: request.evidence_id, pillar: draft.pillar, hook: draft.hook.trim(), body: draft.body.trim(), cta: draft.cta.trim(), hashtags: draft.hashtags, claims: draft.claims, image_brief: draft.image_brief.trim(), visual_spec: draft.visual_spec, image_title: draft.visual_spec.technical_title + (draft.visual_spec.international_name ? ' (' + draft.visual_spec.international_name + ')' : ''), image_points: draft.visual_spec.takeaways.map((item) => item.label), risk_flags: risks, approval_status: risks.length ? 'blocked' : 'needs_review', text_model: response.model || 'gpt-6.1-terra', openai_response_id: response.id || null, token_usage: response.usage || null } }];"
       },
       "id": "93293efa-c97b-4f13-b81d-ce2792c2c1fb",
       "name": "Validate Regenerated Draft",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1040, 0]
+      "position": [
+        1040,
+        0
+      ]
     },
     {
       "parameters": {
@@ -113,21 +139,27 @@
       "name": "Preserve Source Attribution",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1260, 0]
+      "position": [
+        1260,
+        0
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "WITH deleted_claims AS (DELETE FROM claim_map WHERE post_id = $2::uuid), updated AS (UPDATE content_posts SET pillar = $3, hook = $4, body = $5, cta = $6, hashtags = $7::text[], image_brief = $8, image_path = CASE WHEN $1 = 'telegram_regenerate_both' THEN NULL ELSE image_path END, image_model = CASE WHEN $1 = 'telegram_regenerate_both' THEN NULL ELSE image_model END, risk_flags = $9::text[], approval_status = $10, reviewer_notes = NULL, approved_at = NULL, scheduled_at = NULL, text_model = $11, openai_response_id = NULLIF($12, ''), token_usage = COALESCE(token_usage, '{}'::jsonb) || jsonb_build_object('text_regeneration', NULLIF($13, '')::jsonb) WHERE id = $2::uuid AND approval_status IN ('regenerating_text', 'regenerating_both') RETURNING id), inserted_claims AS (INSERT INTO claim_map (post_id, evidence_id, claim_text, allowed, reason) SELECT updated.id, NULLIF(claim->>'evidence_id', '')::uuid, claim->>'claim', COALESCE((claim->>'allowed')::boolean, false), COALESCE(claim->>'reason', '') FROM updated CROSS JOIN jsonb_array_elements($14::jsonb) AS claim), event_done AS (UPDATE system_events SET payload = payload || jsonb_build_object('processed_at', now()) WHERE id = $15::bigint RETURNING id) SELECT updated.id AS post_id, $10 AS approval_status, ($1 = 'telegram_regenerate_both') AS image_regeneration_required FROM updated, event_done;",
+        "query": "WITH deleted_claims AS (DELETE FROM claim_map WHERE post_id = $2::uuid), updated AS (UPDATE content_posts SET pillar = $3, hook = $4, body = $5, cta = $6, hashtags = $7::text[], image_brief = $8, image_title = CASE WHEN $1 = 'telegram_regenerate_both' THEN $9 ELSE image_title END, image_points = CASE WHEN $1 = 'telegram_regenerate_both' THEN $10::text[] ELSE image_points END, visual_spec = CASE WHEN $1 = 'telegram_regenerate_both' THEN $11::jsonb ELSE visual_spec END, image_path = CASE WHEN $1 = 'telegram_regenerate_both' THEN NULL ELSE image_path END, image_model = CASE WHEN $1 = 'telegram_regenerate_both' THEN NULL ELSE image_model END, risk_flags = $12::text[], approval_status = $13, reviewer_notes = NULL, approved_at = NULL, scheduled_at = NULL, text_model = $14, openai_response_id = NULLIF($15, ''), token_usage = COALESCE(token_usage, '{}'::jsonb) || jsonb_build_object('text_regeneration', NULLIF($16, '')::jsonb) WHERE id = $2::uuid AND approval_status IN ('regenerating_text', 'regenerating_both') RETURNING id), inserted_claims AS (INSERT INTO claim_map (post_id, evidence_id, claim_text, allowed, reason) SELECT updated.id, NULLIF(claim->>'evidence_id', '')::uuid, claim->>'claim', COALESCE((claim->>'allowed')::boolean, false), COALESCE(claim->>'reason', '') FROM updated CROSS JOIN jsonb_array_elements($17::jsonb) AS claim), event_done AS (UPDATE system_events SET payload = payload || jsonb_build_object('processed_at', now()) WHERE id = $18::bigint RETURNING id) SELECT updated.id AS post_id, $13 AS approval_status, ($1 = 'telegram_regenerate_both') AS image_regeneration_required FROM updated, event_done;",
         "options": {
-          "queryReplacement": "={{ [ $json.event_type, $json.post_id, $json.pillar, $json.hook, $json.body, $json.cta, $json.hashtags, $json.image_brief, $json.risk_flags, $json.approval_status, $json.text_model, $json.openai_response_id ?? '', JSON.stringify($json.token_usage ?? {}), JSON.stringify($json.claims), $json.event_id ] }}"
+          "queryReplacement": "={{ [ $json.event_type, $json.post_id, $json.pillar, $json.hook, $json.body, $json.cta, $json.hashtags, $json.image_brief, $json.image_title, $json.image_points, JSON.stringify($json.visual_spec), $json.risk_flags, $json.approval_status, $json.text_model, $json.openai_response_id ?? '', JSON.stringify($json.token_usage ?? {}), JSON.stringify($json.claims), $json.event_id ] }}"
         }
       },
       "id": "d315db40-ec1d-4629-9789-08647de4fe93",
       "name": "Save Regenerated Draft",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [1480, 0],
+      "position": [
+        1480,
+        0
+      ],
       "credentials": {
         "postgres": {
           "id": "RCUmTRfZRsrZRn82",
@@ -138,18 +170,104 @@
   ],
   "pinData": {},
   "connections": {
-    "Manual Trigger": { "main": [[{ "node": "Claim Regeneration", "type": "main", "index": 0 }]] },
-    "Every Minute": { "main": [[{ "node": "Claim Regeneration", "type": "main", "index": 0 }]] },
-    "Claim Regeneration": { "main": [[{ "node": "Build Regeneration Request", "type": "main", "index": 0 }]] },
-    "Build Regeneration Request": { "main": [[{ "node": "Apply Telegram Length", "type": "main", "index": 0 }]] },
-    "Apply Telegram Length": { "main": [[{ "node": "OpenAI Regenerate Draft", "type": "main", "index": 0 }]] },
-    "OpenAI Regenerate Draft": { "main": [[{ "node": "Validate Regenerated Draft", "type": "main", "index": 0 }]] },
-    "Validate Regenerated Draft": { "main": [[{ "node": "Preserve Source Attribution", "type": "main", "index": 0 }]] },
-    "Preserve Source Attribution": { "main": [[{ "node": "Save Regenerated Draft", "type": "main", "index": 0 }]] }
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Claim Regeneration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Minute": {
+      "main": [
+        [
+          {
+            "node": "Claim Regeneration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Regeneration": {
+      "main": [
+        [
+          {
+            "node": "Build Regeneration Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Regeneration Request": {
+      "main": [
+        [
+          {
+            "node": "Apply Telegram Length",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Telegram Length": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Regenerate Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Regenerate Draft": {
+      "main": [
+        [
+          {
+            "node": "Validate Regenerated Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Regenerated Draft": {
+      "main": [
+        [
+          {
+            "node": "Preserve Source Attribution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve Source Attribution": {
+      "main": [
+        [
+          {
+            "node": "Save Regenerated Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": true,
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Istanbul", "saveManualExecutions": true },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul",
+    "saveManualExecutions": true
+  },
   "versionId": "18cb0266-8046-44ce-83e8-8c1c49851d23",
-  "meta": { "templateCredsSetupCompleted": true },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
   "tags": []
 }

@@ -46,6 +46,72 @@
       "maxItems": 3,
       "items": { "type": "string", "maxLength": 38 }
     },
+    "visual_spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "layout_type": {
+          "type": "string",
+          "enum": ["process_flow", "layered_architecture", "comparison", "cause_effect", "cycle"]
+        },
+        "technical_title": { "type": "string", "maxLength": 42 },
+        "international_name": { "type": "string", "maxLength": 48 },
+        "curiosity_subtitle": { "type": "string", "maxLength": 92 },
+        "stages": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "maxLength": 26 },
+              "description": { "type": "string", "maxLength": 58 },
+              "icon": {
+                "type": "string",
+                "enum": ["user", "identity", "shield", "lock", "network", "server", "database", "sensor", "plc", "ai", "energy", "analytics", "approval", "decision", "eye", "pulse", "cloud", "gateway"]
+              },
+              "state": { "type": "string", "enum": ["normal", "controlled", "risk", "outcome"] }
+            },
+            "required": ["label", "description", "icon", "state"]
+          }
+        },
+        "connections": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "from": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "to": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "type": { "type": "string", "enum": ["flow", "allowed", "blocked", "conditional", "bidirectional"] }
+            },
+            "required": ["from", "to", "type"]
+          }
+        },
+        "takeaways": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "maxLength": 24 },
+              "description": { "type": "string", "maxLength": 46 },
+              "icon": {
+                "type": "string",
+                "enum": ["user", "identity", "shield", "lock", "network", "server", "database", "sensor", "plc", "ai", "energy", "analytics", "approval", "decision", "eye", "pulse", "cloud", "gateway"]
+              }
+            },
+            "required": ["label", "description", "icon"]
+          }
+        }
+      },
+      "required": ["layout_type", "technical_title", "international_name", "curiosity_subtitle", "stages", "connections", "takeaways"]
+    },
     "risk_flags": {
       "type": "array",
       "items": { "type": "string" }
@@ -59,6 +125,7 @@
     "hashtags",
     "claims",
     "image_brief",
+    "visual_spec",
     "risk_flags"
   ]
 }

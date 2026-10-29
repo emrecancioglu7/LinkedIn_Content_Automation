@@ -8,7 +8,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
@@ -25,19 +28,25 @@
       "name": "Every 2 Minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 160]
+      "position": [
+        0,
+        160
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id, pillar, hook, body, image_brief, image_title, image_points FROM content_posts WHERE approval_status = 'needs_review' AND image_path IS NULL ORDER BY created_at LIMIT 1;",
+        "query": "SELECT id, pillar, hook, body, image_brief, image_title, image_points, visual_spec FROM content_posts WHERE approval_status = 'needs_review' AND image_path IS NULL ORDER BY created_at LIMIT 1;",
         "options": {}
       },
       "id": "cf056ef0-c8e4-463a-8d62-5e1ed1c5b301",
       "name": "Select Draft",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [260, 0],
+      "position": [
+        260,
+        0
+      ],
       "credentials": {
         "postgres": {
           "id": "RCUmTRfZRsrZRn82",
@@ -47,23 +56,29 @@
     },
     {
       "parameters": {
-        "jsCode": "const post = $json;\nconst visualRules = `Create a premium editorial technology illustration for a Turkish LinkedIn expert post. Use a sophisticated dark navy, electric blue, white and turquoise palette with selective luminous accents. Build a strong central focal point, layered depth, elegant isometric or semi-3D technical forms, subtle cinematic lighting, soft shadows and crisp geometry. Make complex industrial technology immediately understandable and visually memorable, like a high-end technology magazine cover illustration. Use the full square canvas with balanced negative space. Avoid generic stock imagery, clutter, excessive tiny icons, photorealistic factory scenes, fake dashboard screenshots, customer logos, brand names, human faces and personal data. Do not render any words, letters, labels or pseudo-writing; exact Turkish text and branding will be placed in separate bands outside the illustration. Square 1200x1200 composition.`;\nreturn [{ json: { request_body: {\n  model: 'gpt-image-2.5-flare',\n  prompt: `${visualRules}\\n\\nPost theme: ${post.pillar}\\nHook: ${post.hook}\\nVisual brief: ${post.image_brief}`,\n  size: '1200x1200',\n  quality: 'high',\n  output_format: 'png',\n  background: 'opaque'\n} } }];"
+        "jsCode": "const post = $json;\nconst spec = typeof post.visual_spec === 'string' ? JSON.parse(post.visual_spec) : (post.visual_spec || {});\nconst layoutGuide = { process_flow: 'a clearly ordered TOP-TO-BOTTOM process with three to five distinct steps on one central vertical spine', layered_architecture: 'a vertically layered technical architecture with visible boundaries between layers', comparison: 'a balanced side-by-side technical comparison with a clear shared center or divider', cause_effect: 'a visible cause-to-consequence chain with branching outcomes when needed', cycle: 'a closed technical feedback loop with a clear clockwise reading order' };\nconst stages = Array.isArray(spec.stages) ? spec.stages : [];\nconst connections = Array.isArray(spec.connections) ? spec.connections : [];\nconst stagePlan = stages.map((stage) => '- ' + stage.label + ': ' + stage.description + ' [icon=' + stage.icon + ', state=' + stage.state + ']').join('\\n');\nconst connectionPlan = connections.map((edge) => edge.from + ' -> ' + edge.to + ' [' + edge.type + ']').join(', ');\nconst visualRules = 'Use case: infographic-diagram. Create only the text-free technical illustration layer for an educational Turkish LinkedIn infographic. The chosen visual grammar is ' + (layoutGuide[spec.layout_type] || layoutGuide.process_flow) + '. Every component must have a distinct technical role and the relationships must be understandable without labels. Use recognizable industrial and enterprise technology components appropriate to the stage plan. Use explicit cables, arrows, boundaries, grouping and scale to communicate the mechanism. Connection semantics: allowed/flow in emerald, blocked in restrained red with a clear stop symbol, conditional in restrained amber, bidirectional with two arrowheads. Do not invent extra stages or unrelated objects. Leave seamless unframed negative space near the outer edges for deterministic callouts and a quiet lower strip for takeaways. Never draw blank rectangles, empty cards, placeholder panels, UI frames, outlined slots, fake dashboards, words, letters, numbers, logos, watermarks or pseudo-writing. The final published canvas is portrait 1200x1500. Build the technical narrative vertically from top to bottom, centered on one continuous vertical spine. Place the first stage near the upper quarter, intermediate stages down the middle, and the final stage above the lower safe zone. Use a compact central width; never arrange the main stages side by side. Keep clear side gutters for callouts. Reserve the entire lower 20 percent as uninterrupted empty obsidian background: no devices, branches, cables, arrows, shadows or glow may enter it. Every object belonging to the final stage must be fully visible above that safe zone. The generated source layer is square 1200x1200 but must preserve this portrait reading direction.';\nconst prompt = visualRules + '\\n\\nLayout type: ' + (spec.layout_type || 'process_flow') + '\\nTechnical concept: ' + (spec.technical_title || post.pillar) + '\\nPost theme: ' + post.pillar + '\\nVisual brief: ' + post.image_brief + '\\n\\nStages:\\n' + stagePlan + '\\n\\nConnections: ' + connectionPlan;\nreturn [{ json: { request_body: { model: 'gpt-image-2.5-flare', prompt, size: '1200x1200', quality: 'high', output_format: 'png', background: 'opaque' } } }];"
       },
       "id": "d2e7b86d-1d97-461e-8a8a-204a72a09978",
       "name": "Build Image Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [520, 0]
+      "position": [
+        520,
+        0
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const requestBody = { ...$json.request_body };\nrequestBody.prompt = `${requestBody.prompt}\\n\\nPREMIUM ART DIRECTION — this overrides earlier color wording. Match the visual identity of emrecancioglu.com exactly: obsidian black #0A0B0D background, graphite surfaces #131519 and #1A1D22, restrained emerald accent #34D399, deep emerald #10B981, warm off-white #ECECEA and muted gray #9A9A97. Do not use electric blue, cyan, purple, rainbow gradients or excessive neon. Create a luxury enterprise-technology editorial illustration with cinematic low-key lighting, brushed graphite metal, smoked glass, precise micro-details, subtle volumetric depth and controlled emerald reflections. Avoid plastic toy-like 3D icons, generic stock isometric scenes, glossy cartoon objects, oversized shields and decorative glow overload. Show exactly three or four clearly separated architecture components connected by an obvious directional flow. Use recognizable server racks, database cylinders, network zones, gateways, industrial controllers or field devices as appropriate. Reserve clean negative space along the left and right edges for deterministic Turkish callout labels that will be added later. Keep every component visually distinct and do not place important objects against the side edges. The result should feel like a premium technology annual report cover, not a template.`;\nreturn [{ json: { request_body: requestBody } }];"
+        "jsCode": "const requestBody = { ...$json.request_body };\nrequestBody.prompt += '\\n\\nBRAND ART DIRECTION: Match emrecancioglu.com: obsidian #0A0B0D background, graphite #131519 and #1A1D22 surfaces, emerald #34D399 and #10B981 accents, warm off-white #ECECEA and muted gray #9A9A97. Use premium technical cutaway or clean semi-3D vector realism, precise geometry, controlled depth and restrained emerald reflections. No electric blue, purple, rainbow gradients, excessive neon, plastic toy-like objects, oversized shields or cinematic cover-art composition. Explanation is more important than spectacle. Reserved negative space must remain continuous background with absolutely no empty gray boxes, placeholder cards, decorative panels or frames.';\nrequestBody.prompt += '\\n\\nORIENTATION LOCK: The destination is a portrait LinkedIn canvas. All primary stages must form one top-to-bottom visual chain around the centerline. Do not use a wide left-to-right panorama. External callouts will connect horizontally from a side gutter to the matching stage at the same height. Do not draw stage numbers, numbered circles, badges or labels inside the illustration.';\nreturn [{ json: { request_body: requestBody } }];"
       },
       "id": "7cbd2ffd-a55d-4456-87fa-e21ffdc1e8ca",
       "name": "Apply Diagram Composition",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [650, 0]
+      "position": [
+        650,
+        0
+      ]
     },
     {
       "parameters": {
@@ -72,14 +87,19 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ post_id: $('Select Draft').first().json.id, title: $('Select Draft').first().json.image_title || $('Select Draft').first().json.hook, points: $('Select Draft').first().json.image_points || [], body: $('Select Draft').first().json.body, pillar: $('Select Draft').first().json.pillar }) }}",
-        "options": { "timeout": 30000 }
+        "body": "={{ JSON.stringify({ post_id: $('Select Draft').first().json.id, title: $('Select Draft').first().json.image_title || $('Select Draft').first().json.hook, points: $('Select Draft').first().json.image_points || [], body: $('Select Draft').first().json.body, pillar: $('Select Draft').first().json.pillar, visual_spec: $('Select Draft').first().json.visual_spec || {} }) }}",
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "c812cd51-f02c-4b56-9aea-416e59ad10be",
       "name": "Apply Brand Layout",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1430, 0]
+      "position": [
+        1430,
+        0
+      ]
     },
     {
       "parameters": {
@@ -90,7 +110,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -105,7 +128,10 @@
       "name": "OpenAI Image Generation",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [780, 0],
+      "position": [
+        780,
+        0
+      ],
       "credentials": {
         "openAiApi": {
           "id": "OzOsPk2xMu5RlMeJ",
@@ -121,7 +147,10 @@
       "name": "Convert Image",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1040, 0]
+      "position": [
+        1040,
+        0
+      ]
     },
     {
       "parameters": {
@@ -134,7 +163,10 @@
       "name": "Write Image to Disk",
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
-      "position": [1300, 0]
+      "position": [
+        1300,
+        0
+      ]
     },
     {
       "parameters": {
@@ -148,7 +180,10 @@
       "name": "Save Image Metadata",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [1690, 0],
+      "position": [
+        1690,
+        0
+      ],
       "credentials": {
         "postgres": {
           "id": "RCUmTRfZRsrZRn82",
@@ -160,31 +195,103 @@
   "pinData": {},
   "connections": {
     "Manual Trigger": {
-      "main": [[{ "node": "Select Draft", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Select Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Every 2 Minutes": {
-      "main": [[{ "node": "Select Draft", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Select Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Select Draft": {
-      "main": [[{ "node": "Build Image Request", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Image Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Image Request": {
-      "main": [[{ "node": "Apply Diagram Composition", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Apply Diagram Composition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Apply Diagram Composition": {
-      "main": [[{ "node": "OpenAI Image Generation", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "OpenAI Image Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "OpenAI Image Generation": {
-      "main": [[{ "node": "Convert Image", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Convert Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Convert Image": {
-      "main": [[{ "node": "Write Image to Disk", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Write Image to Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Write Image to Disk": {
-      "main": [[{ "node": "Apply Brand Layout", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Apply Brand Layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Apply Brand Layout": {
-      "main": [[{ "node": "Save Image Metadata", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Save Image Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,

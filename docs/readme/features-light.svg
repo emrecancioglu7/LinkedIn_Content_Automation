@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="230" viewBox="0 0 1200 230" role="img" aria-label="No invented claims: Every metric maps to evidence, Unmapped claim → post blocked, Reviewer model can't add claims · Human in the loop: Draft + visual sent to Telegram, Approve, redo text or image, Nothing posts without a yes · On-brand visuals: OpenAI image as the base, Pillow renderer adds title + logo, Same palette as the website · Local &amp; private: Docker Compose on a Mac, Secrets in .env / Docker secrets, Private evidence never leaves"><title>No invented claims: Every metric maps to evidence, Unmapped claim → post blocked, Reviewer model can't add claims · Human in the loop: Draft + visual sent to Telegram, Approve, redo text or image, Nothing posts without a yes · On-brand visuals: OpenAI image as the base, Pillow renderer adds title + logo, Same palette as the website · Local &amp; private: Docker Compose on a Mac, Secrets in .env / Docker secrets, Private evidence never leaves</title><style>text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', Helvetica, Arial, sans-serif; } .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; } 
+    .fade { opacity: 0; animation: fade .7s ease-out forwards; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .pulse { stroke-dasharray: 16 600; stroke-dashoffset: 616; animation: flow 2.4s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: 0; } }
+ 
+    .shine { animation: shine 3s ease-in-out infinite; }
+    @keyframes shine { 0% { transform: translateX(0); opacity: 0; } 20% { opacity: .6; } 60%,100% { transform: translateX(226px); opacity: 0; } }
+     @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .fade { opacity: 1; } .write { stroke-dashoffset: 0 !important; } .stamp { opacity: 1; } }</style><g class="fade" style="animation-delay:0.00s">
+      <rect x="4" y="4" width="286" height="222" rx="14" fill="#ffffff" stroke="#d7e3dd" stroke-width="1.5"/>
+      <rect x="4" y="4" width="286" height="4" rx="2" fill="#059669"/>
+      <rect x="4" y="4" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6" class="shine" style="animation-delay:0.0s"/>
+      <text x="28" y="56" font-size="24" font-weight="400" fill="#17181a" text-anchor="start" >🧾</text>
+      <text x="68" y="56" font-size="18" font-weight="700" fill="#17181a" text-anchor="start" >No invented claims</text>
+      <line x1="28" y1="78" x2="266" y2="78" stroke="#d7e3dd"/>
+      <text x="28" y="120" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Every metric maps to evidence</text><text x="28" y="148" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Unmapped claim → post blocked</text><text x="28" y="176" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Reviewer model can't add claims</text>
+    </g><g class="fade" style="animation-delay:0.15s">
+      <rect x="306" y="4" width="286" height="222" rx="14" fill="#ffffff" stroke="#d7e3dd" stroke-width="1.5"/>
+      <rect x="306" y="4" width="286" height="4" rx="2" fill="#0284c7"/>
+      <rect x="306" y="4" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6" class="shine" style="animation-delay:0.5s"/>
+      <text x="330" y="56" font-size="24" font-weight="400" fill="#17181a" text-anchor="start" >📱</text>
+      <text x="370" y="56" font-size="18" font-weight="700" fill="#17181a" text-anchor="start" >Human in the loop</text>
+      <line x1="330" y1="78" x2="568" y2="78" stroke="#d7e3dd"/>
+      <text x="330" y="120" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Draft + visual sent to Telegram</text><text x="330" y="148" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Approve, redo text or image</text><text x="330" y="176" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Nothing posts without a yes</text>
+    </g><g class="fade" style="animation-delay:0.30s">
+      <rect x="608" y="4" width="286" height="222" rx="14" fill="#ffffff" stroke="#d7e3dd" stroke-width="1.5"/>
+      <rect x="608" y="4" width="286" height="4" rx="2" fill="#d97706"/>
+      <rect x="608" y="4" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6" class="shine" style="animation-delay:1.0s"/>
+      <text x="632" y="56" font-size="24" font-weight="400" fill="#17181a" text-anchor="start" >🎨</text>
+      <text x="672" y="56" font-size="18" font-weight="700" fill="#17181a" text-anchor="start" >On-brand visuals</text>
+      <line x1="632" y1="78" x2="870" y2="78" stroke="#d7e3dd"/>
+      <text x="632" y="120" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ OpenAI image as the base</text><text x="632" y="148" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Pillow renderer adds title + logo</text><text x="632" y="176" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Same palette as the website</text>
+    </g><g class="fade" style="animation-delay:0.45s">
+      <rect x="910" y="4" width="286" height="222" rx="14" fill="#ffffff" stroke="#d7e3dd" stroke-width="1.5"/>
+      <rect x="910" y="4" width="286" height="4" rx="2" fill="#059669"/>
+      <rect x="910" y="4" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6" class="shine" style="animation-delay:1.5s"/>
+      <text x="934" y="56" font-size="24" font-weight="400" fill="#17181a" text-anchor="start" >🔒</text>
+      <text x="974" y="56" font-size="18" font-weight="700" fill="#17181a" text-anchor="start" >Local &amp; private</text>
+      <line x1="934" y1="78" x2="1172" y2="78" stroke="#d7e3dd"/>
+      <text x="934" y="120" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Docker Compose on a Mac</text><text x="934" y="148" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Secrets in .env / Docker secrets</text><text x="934" y="176" font-size="14" font-weight="400" fill="#5b6168" text-anchor="start" >▸ Private evidence never leaves</text>
+    </g></svg>
